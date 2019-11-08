@@ -6,19 +6,17 @@
 
 #pragma once
 
-#include <string>
+#include "MyString.h"
 
 using namespace std;
 
+// ReSharper disable once CppInconsistentNaming
 class BST
 {
 public:
-	void Insert(string str);
-	void Search(string str);
-	void Min();
-	void Max();
-	void Next(string str);
-	void Prev(string str);
+	BST();
+	void Insert(const MyString& str);
+	void Search(const MyString& str) const;
 
 private:
 
@@ -27,30 +25,25 @@ private:
 		Node* parent;
 		Node* left;
 		Node* right;
-		string name;
+		MyString name;
 		int count;
 
-		Node(string name, int count, Node* parent)
+		Node(MyString name, const int count, Node* parent)
 		{
 			this->name = name;
 			this->count = count;
 			this->parent = parent;
-			left = NULL;
-			right = NULL;
+			left = nullptr;
+			right = nullptr;
 		}
 
-		bool IsRoot() { return parent == NULL; }
-		bool IsLeaf() { return left == NULL && right == NULL; }
-		string ToString() { return name + " " + to_string(count); };
+		bool IsRoot() const { return parent == nullptr; }
+		bool IsLeaf() const { return left == nullptr && right == nullptr; }
+		MyString ToString() const { return name + ' ' + count; }
 	};
 
 	Node* root;
-	bool IsEmpty() { return root == NULL; };
-	Node* Find(string str);
-	void Traverse(Node* node);
-	Node* FindSuccessor(Node* node);
-	Node* FindPredecessor(Node* node);
-	Node* FindMinimum(Node* node);
-	Node* FindMaximum(Node* node);
-	void Transplant(Node* u, Node* v);
+	bool IsEmpty() const;
+	Node* Find(const MyString& str) const;
+	static void Traverse(Node* node);
 };

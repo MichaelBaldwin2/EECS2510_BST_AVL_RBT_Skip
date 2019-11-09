@@ -1,22 +1,23 @@
 /*
- * BST.h
+ * RBT.h
  * Name: Mike Baldwin
  * Course: EECS 2510 Non-Linear Data Structures - Fall 2019
  * Date: 11/9/2019
- * Description: Declaration of the Binary Search tree
+ * Description: Declaration of the Red-Black Tree
 */
 
 #pragma once
 
-class BST
+class RBT
 {
 public:
-	BST();
+	RBT();
 	void Insert(const char* cArray);
 	void Search(const char* cArray);
 	void GetHeight();
 
 private:
+	enum Color { RED, BLACK };
 
 	struct Node
 	{
@@ -25,14 +26,18 @@ private:
 		Node* parent;
 		Node* left;
 		Node* right;
-		
-		Node(const char* name, const int count, Node* parent, Node* left, Node* right);
-		bool IsRoot();
+		Color color = BLACK;
+
+		Node(const char* name, const int count, Node* parent, Node* left, Node* right, Color color);
 		bool IsLeaf();
 	};
 
 	Node* root;
-	bool IsEmpty();
+	Node* nil;
+	void Insert(Node* z);
+	void InsertFixup(Node* currentNode);
+	void LeftRotateAround(Node* x);
+	void RightRotateAround(Node* x);
 	Node* Find(const char* cArray);
 	void Traverse(Node* node);
 	int ComputeHeight(Node* node);

@@ -22,6 +22,13 @@ RBT::RBT()
 
 void RBT::Insert(const char* cArray)
 {
+	Node* alreadyFound = Find(cArray);
+	if (alreadyFound != nil)
+	{
+		alreadyFound->count++;
+		return;
+	}
+
 	Node* node = new Node(cArray, 1, nullptr, nullptr, nullptr, BLACK);
 	Insert(node);
 }
@@ -34,15 +41,30 @@ void RBT::Search(const char* cArray)
 	*/
 
 	Node* node = Find(cArray);
-	if (node != nullptr)
+	if (node != nil)
 		std::cout << node->name << ' ' << node->count << std::endl;
 	else
 		std::cout << cArray << " 0" << std::endl;
 }
 
-void RBT::GetHeight()
+int RBT::GetHeight()
 {
-	std::cout << ComputeHeight(root) << std::endl;
+	return ComputeHeight(root);
+}
+
+int RBT::GetApproxWorkDone()
+{
+	return keyComparisonCount + recoloringCount;
+}
+
+int RBT::GetNonUnique()
+{
+	return TraverseNonUnique(root);
+}
+
+int RBT::GetUnique()
+{
+	return TraverseUnique(root);
 }
 
 void RBT::Insert(Node* z)
@@ -53,6 +75,7 @@ void RBT::Insert(Node* z)
 	while (x != nil)
 	{
 		y = x;
+		keyComparisonCount++;
 		if (std::strcmp(z->name, x->name) < 0)
 			x = x->left;
 		else
@@ -64,6 +87,7 @@ void RBT::Insert(Node* z)
 		root = z;
 	else
 	{
+		keyComparisonCount++;
 		if (std::strcmp(z->name, y->name) < 0)
 			y->left = z;
 		else
@@ -72,6 +96,7 @@ void RBT::Insert(Node* z)
 	z->left = nil;
 	z->right = nil;
 	z->color = RED; // Set it to red, We will re-balance the tree below
+	recoloringCount++;
 
 
 	// Insert Fix-up
@@ -83,7 +108,7 @@ void RBT::InsertFixup(Node* currentNode)
 	// currentNode should be RED when entering this function
 	assert(currentNode != nullptr);
 	assert(currentNode->color == RED);
-	
+
 	while (currentNode->parent->color == RED) // While currentNode's parent is RED, we have to fix things
 	{
 		if (currentNode->parent == currentNode->parent->parent->left) // Is currentNodes parent the left child of it's parent?
@@ -95,6 +120,7 @@ void RBT::InsertFixup(Node* currentNode)
 				uncle->color = BLACK; // currentNodes uncle becomes black
 				currentNode->parent->parent->color = RED; // currentNodes grandparent changes to red
 				currentNode = currentNode->parent->parent; // currentNode gets set to currentNode's grandparent (we have to check the tree form there (again))
+				recoloringCount += 3;
 			}
 			else // Case 2 & 3
 			{
@@ -108,6 +134,7 @@ void RBT::InsertFixup(Node* currentNode)
 				currentNode->parent->color = BLACK; // Recolor currentNodes parent to be black 
 				currentNode->parent->parent->color = RED; // Recolor currentNodes grandparent to be Red
 				RightRotateAround(currentNode->parent->parent); // Right rotate around the link between currentNode's parent and grandparent
+				recoloringCount += 2;
 			}
 		}
 		else // Is currentNodes parent the right child of it's parent?
@@ -119,6 +146,7 @@ void RBT::InsertFixup(Node* currentNode)
 				uncle->color = BLACK; // currentNodes uncle becomes black
 				currentNode->parent->parent->color = RED; // currentNodes grandparent changes to red
 				currentNode = currentNode->parent->parent; // currentNode gets set to currentNode's grandparent (we have to check the tree form there (again))
+				recoloringCount += 3;
 			}
 			else // Case 2 & 3
 			{
@@ -132,10 +160,12 @@ void RBT::InsertFixup(Node* currentNode)
 				currentNode->parent->color = BLACK; // Recolor currentNodes parent to be black 
 				currentNode->parent->parent->color = RED; // Recolor currentNodes grandparent to be Red
 				LeftRotateAround(currentNode->parent->parent); // Left rotate around the link between currentNode's parent and grandparent
+				recoloringCount += 2;
 			}
 		}
 	}
 	root->color = BLACK;
+	recoloringCount++;
 }
 
 
@@ -148,10 +178,12 @@ RBT::Node* RBT::Find(const char* cArray)
 	*/
 
 	Node* current = root;
-	while (current != nullptr) //'Current' will be NULL if 'root == NULL', which is intended!
+	while (current != nil) //'Current' will be NULL if 'root == NULL', which is intended!
 	{
+		keyComparisonCount++;
 		if (std::strcmp(cArray, current->name) == 0)
 			return current;
+		keyComparisonCount++;
 		if (std::strcmp(cArray, current->name) < 0)
 			current = current->left;
 		else
@@ -160,21 +192,36 @@ RBT::Node* RBT::Find(const char* cArray)
 	return current;
 }
 
-void RBT::Traverse(Node* node)
+int RBT::TraverseNonUnique(Node* node)
 {
 	/*
-	 * Traverses the tree (or subtree), calls Traversal on it's children, and prints out to console.
+	 * Traverses the tree (or subtree), calls Traversal on it's children, and returns the count of nodes.
 	 * Parameter<node> The node to start the traversal from (in this subtree)
 	*/
 
-	if (node != nullptr)
-	{
-		if (node->left != nullptr)
-			Traverse(node->left);
-		std::cout << node->name << ' ' << node->count << std::endl;
-		if (node->right != nullptr)
-			Traverse(node->right);
-	}
+	if (node == nil)
+		return 0;
+
+	int leftSideUnique = TraverseNonUnique(node->left);
+	int rightSideUnique = TraverseNonUnique(node->right);
+	return leftSideUnique + rightSideUnique + 1;
+}
+
+int RBT::TraverseUnique(Node* node)
+{
+	/*
+	 * Traverses the tree (or subtree), calls Traversal on it's children, and returns the count of nodes that have multiple items.
+	 * Parameter<node> The node to start the traversal from (in this subtree)
+	*/
+
+	if (node == nullptr)
+		return 0;
+	if (node->count < 2)
+		return 0;
+
+	int leftSideUnique = TraverseUnique(node->left);
+	int rightSideUnique = TraverseUnique(node->right);
+	return leftSideUnique + rightSideUnique + 1;
 }
 
 void RBT::LeftRotateAround(Node* x)
@@ -231,14 +278,14 @@ int RBT::ComputeHeight(Node* node)
 	 * Trivial recursive traversal function. It calculates the height.
 	*/
 
-	if(node == nullptr)
+	if (node == nil)
 		return 0;
 	else
 	{
 		int leftHeight = ComputeHeight(node->left);
 		int rightHeight = ComputeHeight(node->right);
 
-		if(leftHeight > rightHeight)
+		if (leftHeight > rightHeight)
 			return (leftHeight + 1);
 		else
 			return rightHeight + 1;
@@ -253,9 +300,4 @@ RBT::Node::Node(const char* name, const int count, Node* parent, Node* left, Nod
 	this->left = left;
 	this->right = right;
 	this->color = color;
-}
-
-bool RBT::Node::IsLeaf()
-{
-	return left == nullptr && right == nullptr;
 }

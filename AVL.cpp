@@ -15,7 +15,7 @@ AVL::AVL() : root{ nullptr }
 {
 }
 
-void AVL::Insert(const char* cArray)
+void AVL::Insert(const char* x)
 {
 	/*
 	 *	Inserts a string into the tree. If the string already exists, then it will increment it's count.
@@ -23,22 +23,7 @@ void AVL::Insert(const char* cArray)
 	 *		<str> This is the string to insert into the tree
 	*/
 
-	/*
-	 * LEGEND FROM SLIDES TO BETTER NAMED VARIABLES:
-	 *		Y	=	newNode
-	 *		A	=	lastNZBFNode
-	 *		B	=	lastNZBFNodeChild
-	 *		F	=	lastNZBFNodeParent
-	 *		P	=	currentNode
-	 *		Q	=	currentNodeParent
-	 *		C	=
-	 *		CL	=
-	 *		CR	=
-	 *		d	=	displacement
-	 */
-
-	Node* newNode; // The new node we insert
-	int displacement; // displacement; Used to adjust BFs
+	int d; // displacement; Used to adjust BFs
 
 	//==============================================================
 	// EMPTY TREE INSERT CODE
@@ -47,13 +32,13 @@ void AVL::Insert(const char* cArray)
 	// If the root is null, then we create a new node and stop the insert here
 	if (root == nullptr)
 	{
-		newNode = new Node(cArray, 0, nullptr, nullptr, 0);
-		root = newNode;
+		Node* y = new Node(x, 0, nullptr, nullptr, 0);
+		root = y;
 		return;
 	}
 
 	//==============================================================
-	// SEARCH AND INSERT CODE
+	// SEARCH AND INSERT CODE (SAME OLD BST INSERT)
 	//==============================================================
 
 	/*
@@ -65,125 +50,121 @@ void AVL::Insert(const char* cArray)
 	 * F is A’s parent (F lags one step behind A)
 	 */
 
-	Node* lastNZBFNode = root; // The last non-zero balance factor node
-	Node* lastNZBFNodeParent = nullptr; // The parent of the last non-zero balance factor node
-	Node* currentNode = root; // The current node we are using to scan through the tree
-	Node* currentNodeParent = nullptr; // The parent of the current node (lags behind current node)
-	while (currentNode != nullptr) // search tree for insertion point. We can't use the search function as we need to track the last non-zero bf node (and it's parent)
+	Node* p = root; // The current node we are using to scan through the tree
+	Node* q = nullptr; // The parent of the current node (lags behind current node)
+	Node* a = root; // The last non-zero balance factor node
+	Node* f = nullptr; // The parent of the last non-zero balance factor node
+
+	while (p != nullptr) // search tree for insertion point. We can't use the search function as we need to track the last non-zero bf node (and it's parent)
 	{
-		if (strcmp(cArray, currentNode->name) == 0) // Found a node that matches, just increment count and return (no balancing needed)
+		keyComparisonCount++;
+		if (strcmp(x, p->data) == 0) // Found a node that matches, just increment count and return (no balancing needed)
 		{
-			currentNode->count++;
+			p->count++;
 			return;
 		}
-		if (currentNode->balanceFactor != 0) // If the current node has a non-zero balance factor, remember it (and its parent)
+		if (p->bf != 0) // If the current node has a non-zero balance factor, remember it (and its parent)
 		{
-			lastNZBFNode = currentNode;
-			lastNZBFNodeParent = currentNodeParent;
+			a = p;
+			f = q;
 		}
 
-		// Advance the current node to it's next child (based upon the BT property). Also bring it's parent tracker up to its old spot.
-		currentNodeParent = currentNode;
-		currentNode = (strcmp(cArray, currentNode->name) < 0) ? currentNode->left : currentNode->right;
+		// Advance the current node to it's next child (based upon the BT property). Also bring it's parent up to its old spot.
+		q = p;
+		p = strcmp(x, p->data) < 0 ? p->left : p->right;
+		keyComparisonCount++;
 	}
 
 	// If we reach here, then current node is NULL. Which is fine, we need to make a new node anyways...
-
-	//==============================================================
-	// NEW NODE INSERT CODE (and balancing after)
-	//==============================================================
-
-	// Create a new node
-	newNode = new Node(cArray, 0, nullptr, nullptr, 0);
+	Node* y = new Node(x, 0, nullptr, nullptr, 0);
 
 	// Based upon currentNodeParent, we will either place this new node as its left or right child
-	if (strcmp(cArray, currentNodeParent->name) < 0)
-		currentNodeParent->left = newNode;
+	if (strcmp(x, q->data) < 0)
+		q->left = y;
 	else
-		currentNodeParent->right = newNode;
+		q->right = y;
+	keyComparisonCount++;
+
+	//==============================================================
+	// TREE BALANCING
+	//==============================================================
 
 	/*
-	 * So far, except for keeping track of F and A, we have done exactly
-	 * the same “dumb” BST insert we’ve seen before.  Now, it’s time to do
-	 * the AVL-specific stuff: detect (and fix, if we have) an imbalance
+	 * Adjust BFs from lastNZBFNode to CurrentNodeParent.
+	 * lastNZBFNode was the LAST ancestor with a BF of ± 1, (or is still the root, because we never FOUND a BF of ± 1).
+	 * So ALL nodes BETWEEN lastNZBFNode and CurrentNodeParent must have a BF of 0, and will, therefore, BECOME ± 1.
+	 *
+	 * If newNode is inserted in the LEFT subtree of lastNZBFNode, then displacement = +1
+	 * If displacement == -1 means we inserted newNode in the RIGHT subtree of lastNZBFNode.
 	 */
 
-	 // "Thar be out o' balance trees beyond this point lad"
-	 //===================================================================\\
+	Node* b; // This the child of the last non-zero branch factor node we encountered
 
-	 //==============================================================
-	 // TREE BALANCING (not unlike balancing a broom on your hand....but with a tree)
-	 //==============================================================
-
-	 /*
-	  * Adjust BFs from lastNZBFNode to CurrentNodeParent.
-	  * lastNZBFNode was the LAST ancestor with a BF of ± 1, (or is still the root, because we never FOUND a BF of ± 1).
-	  * So ALL nodes BETWEEN lastNZBFNode and CurrentNodeParent must have a BF of 0, and will, therefore, BECOME ± 1.
-	  *
-	  * If newNode is inserted in the LEFT subtree of lastNZBFNode, then displacement = +1
-	  * If displacement == -1 means we inserted newNode in the RIGHT subtree of lastNZBFNode.
-	  */
-
-	Node* lastNZBFNodeChild; // This the child of the last non-zero branch factor node we encountered
-
+	keyComparisonCount++;
 	// Which way is the displacement
-	if (strcmp(cArray, lastNZBFNode->name) > 0) // Is the new node on the right side of the lastNZBFNode
+	if (strcmp(x, a->data) > 0) // Is the new node on the right side of the lastNZBFNode
 	{
-		lastNZBFNodeChild = lastNZBFNode->right; // Set lastNZBFNodeChild to lastNZBFNodes right child
-		currentNode = lastNZBFNode->right; // Set currentNode to lastNZBFNodes right child
-		displacement = -1; // Displacement is off by -1 now
+		b = a->right; // Set lastNZBFNodeChild to lastNZBFNodes right child
+		p = a->right; // Set currentNode to lastNZBFNodes right child
+		d = -1; // Displacement is off by -1 now
 	}
 	else // Is the new node on the left side of the lastNZBFNode
 	{
-		lastNZBFNodeChild = lastNZBFNode->left; // Set lastNZBFNodeChild to lastNZBFNodes left child
-		currentNode = lastNZBFNode->left; // Set currentNode to lastNZBFNodes left child
-		displacement = +1; // Displacement is off by +1 now
+		b = a->left; // Set lastNZBFNodeChild to lastNZBFNodes left child
+		p = a->left; // Set currentNode to lastNZBFNodes left child
+		d = 1; // Displacement is off by +1 now
 	}
 
 	// currentNode is now one node below lastNZBFNode. Adjust from here to the insertion point. Don’t do anything to newNode.
-	while (currentNode != newNode /*&& currentNode != nullptr*/)
+	while (p != y /*&& currentNode != nullptr*/)
 	{
-		assert(currentNode != nullptr);
+		assert(p != nullptr);
 
+		keyComparisonCount++;
 		// If newNode is on the right side of currentNode (which means the newnode is on the LEFT side of the currentNode)
-		if (strcmp(cArray, currentNode->name) > 0)
+		if (strcmp(x, p->data) > 0)
 		{
 			// adjust BF and move forward
-			currentNode->balanceFactor = -1;
-			currentNode = currentNode->right;
+			p->bf = -1;
+			p = p->right;
+			bfChangeCount++;
 		}
 		else // If newNode is on the left side of currentNode (which means the newnode is on the RIGHT side of the currentNode)
 		{
 			// adjust BF and move forward
-			currentNode->balanceFactor = +1;
-			currentNode = currentNode->left;
+			p->bf = 1;
+			p = p->left;
+			bfChangeCount++;
 		}
 	}
 
 	// If the tree was completely balanced then all we do is set the new balance factor and return
-	if (lastNZBFNode->balanceFactor == 0)
+	if (a->bf == 0)
 	{
-		lastNZBFNode->balanceFactor = displacement; // Set the balanceFactor to ± 1 (the displacement tells us which direction)
+		bfChangeCount++;
+		a->bf = d; // Set the bf to ± 1 (the displacement tells us which direction)
 		return;
 	}
 	// If the tree already had a slight imbalance the OTHER way, then did the insertion throw the tree into complete balance. If so, set the BF to zero and return
-	if (lastNZBFNode->balanceFactor == -displacement)
+	if (a->bf == -d)
 	{
-		lastNZBFNode->balanceFactor = 0; // Set balanceFactor to zero and return
+		bfChangeCount++;
+		a->bf = 0; // Set bf to zero and return
 		return;
 	}
 
 	//If we took neither of the two returns above then the tree was acceptably imbalanced, and is now UNACCEPTABLY IMBALANCED.
-	if (displacement == +1)
+	if (d == 1)
 	{
-		assert(lastNZBFNodeChild != nullptr);
+		assert(b != nullptr);
 
-		if (lastNZBFNodeChild->balanceFactor == +1) // LL rotation
+		if (b->bf == 1) // LL rotation
 		{
 			// Change the child pointers of lastNZBFNode and lastNZBFNodeChild to reflect the new post-rotation structure
-			lastNZBFNode->left = lastNZBFNodeChild->right;
-			lastNZBFNodeChild->right = lastNZBFNode;
-			lastNZBFNode->balanceFactor = lastNZBFNodeChild->balanceFactor = 0;
+			a->left = b->right;
+			b->right = a;
+			a->bf = b->bf = 0;
+			bfChangeCount += 2;
 		}
 		else // LR rotation
 		{
@@ -193,7 +174,7 @@ void AVL::Insert(const char* cArray)
 			 * Change the child pointers of lastNZBFNode, lastNZBFNodeChild, and lastNZBFNodeGrandChild to reflect the new post-rotation structure
 			 */
 
-			Node* c = lastNZBFNodeChild->right;
+			Node* c = b->right;
 			Node* cl = c->left;
 			Node* cr = c->right;
 
@@ -202,48 +183,53 @@ void AVL::Insert(const char* cArray)
 			 * 3 sub-cases
 			 * 3 LOC
 			 */
-			switch (c->balanceFactor)
+			switch (c->bf)
 			{
 			case 0: // CASE (a)
-				c->right = lastNZBFNode;
-				c->left = lastNZBFNodeChild;
-				lastNZBFNode->left = lastNZBFNodeChild->right = nullptr;
+				c->right = a;
+				c->left = b;
+				a->left = b->right = nullptr;
+				a->bf = b->bf = c->bf = 0;
+				bfChangeCount += 3;
 				break;
 			case 1: // CASE (b)
-				c->left = lastNZBFNodeChild;
-				c->right = lastNZBFNode;
-				lastNZBFNodeChild->right = cl;
-				lastNZBFNode->left = cr;
-				c->balanceFactor = 0;
-				lastNZBFNodeChild->balanceFactor = 0;
-				lastNZBFNode->balanceFactor = -1;
+				c->right = a;
+				c->left = b;
+				b->right = cl;
+				a->left = cr;
+				b->bf = 0;
+				c->bf = 0;
+				a->bf = -1;
+				bfChangeCount += 3;
 				break;
 			case -1: // CASE (c)
-				c->left = lastNZBFNodeChild;
-				c->right = lastNZBFNode;
-				lastNZBFNodeChild->right = cl;
-				lastNZBFNode->left = cr;
-				c->balanceFactor = 0;
-				lastNZBFNode->balanceFactor = 0;
-				lastNZBFNodeChild->balanceFactor = 1;
+				c->right = a;
+				c->left = b;
+				b->right = cl;
+				a->left = cr;
+				b->bf = 1;
+				c->bf = 0;
+				a->bf = 0;
+				bfChangeCount += 3;
 				break;
 			}
 
-			c->balanceFactor = 0;
-			lastNZBFNodeChild = c;
+			c->bf = 0;
+			b = c;
 		}
 	}
 	else // displacement = -1
 	{
 		//Symmetric to above
 
-		assert(lastNZBFNodeChild != nullptr);
+		assert(b != nullptr);
 
-		if (lastNZBFNodeChild->balanceFactor == +1) // RR rotation
+		if (b->bf == -1) // RR rotation
 		{
-			lastNZBFNode->right = lastNZBFNodeChild->left;
-			lastNZBFNodeChild->left = lastNZBFNode;
-			lastNZBFNode->balanceFactor = lastNZBFNodeChild->balanceFactor = 0;
+			a->right = b->left;
+			b->left = a;
+			a->bf = b->bf = 0;
+			bfChangeCount += 2;
 		}
 		else
 		{
@@ -253,7 +239,7 @@ void AVL::Insert(const char* cArray)
 			 * Change the child pointers of lastNZBFNode, lastNZBFNodeChild, and lastNZBFNodeGrandChild to reflect the new post-rotation structure
 			 */
 
-			Node* c = lastNZBFNodeChild->left;
+			Node* c = b->left;
 			Node* cl = c->left;
 			Node* cr = c->right;
 
@@ -262,35 +248,39 @@ void AVL::Insert(const char* cArray)
 			 * 3 sub-cases
 			 * 3 LOC
 			 */
-			switch (c->balanceFactor)
+			switch (c->bf)
 			{
 			case 0: // CASE (a)
-				c->right = lastNZBFNodeChild;
-				c->left = lastNZBFNode;
-				lastNZBFNode->left = lastNZBFNodeChild->right = nullptr;
+				c->left = a;
+				c->right = b;
+				a->right = b->left = nullptr;
+				a->bf = b->bf = c->bf = 0;
+				bfChangeCount += 3;
 				break;
 			case 1: // CASE (b)
-				c->left = lastNZBFNode;
-				c->right = lastNZBFNodeChild;
-				lastNZBFNodeChild->left = cr;
-				lastNZBFNode->right = cl;
-				c->balanceFactor = 0;
-				lastNZBFNode->balanceFactor = 0;
-				lastNZBFNodeChild->balanceFactor = -1;
+				c->left = a;
+				c->right = b;
+				b->left = cr;
+				a->right = cl;
+				a->bf = 0;
+				c->bf = 0;
+				b->bf = -1;
+				bfChangeCount += 3;
 				break;
 			case -1: // CASE (c)
-				c->left = lastNZBFNode;
-				c->right = lastNZBFNodeChild;
-				lastNZBFNodeChild->left = cr;
-				lastNZBFNode->right = cl;
-				c->balanceFactor = 0;
-				lastNZBFNode->balanceFactor = 1;
-				lastNZBFNodeChild->balanceFactor = 0;
+				c->left = a;
+				c->right = b;
+				b->left = cr;
+				a->right = cl;
+				a->bf = 1;
+				c->bf = 0;
+				b->bf = 0;
+				bfChangeCount += 3;
 				break;
 			}
 
-			c->balanceFactor = 0;
-			lastNZBFNodeChild = c;
+			c->bf = 0;
+			b = c;
 		}
 	}
 
@@ -304,9 +294,9 @@ void AVL::Insert(const char* cArray)
 	 */
 
 	 // Did we re-balance the whole tree's root?
-	if (lastNZBFNodeParent == nullptr)
+	if (f == nullptr)
 	{
-		root = lastNZBFNodeChild;
+		root = b;
 		return;
 	}
 
@@ -316,14 +306,14 @@ void AVL::Insert(const char* cArray)
 	 * If lastNZBFNode was RIGHT of lastNZBFNodeParent, then lastNZBFNodeChild now needs to be right of lastNZBFNodeParent.
 	*/
 
-	if (lastNZBFNode == lastNZBFNodeParent->left)
+	if (a == f->left)
 	{
-		lastNZBFNodeParent->left = lastNZBFNodeChild;
+		f->left = b;
 		return;
 	}
-	if (lastNZBFNode == lastNZBFNodeParent->right)
+	if (a == f->right)
 	{
-		lastNZBFNodeParent->right = lastNZBFNodeChild;
+		f->right = b;
 		return;
 	}
 	std::cout << "We should never be here" << std::endl;
@@ -338,14 +328,29 @@ void AVL::Search(const char* cArray)
 
 	Node* node = Find(cArray);
 	if (node != nullptr)
-		std::cout << node->name << ' ' << node->count << std::endl;
+		std::cout << node->data << ' ' << node->count << std::endl;
 	else
 		std::cout << cArray << " 0" << std::endl;
 }
 
-void AVL::GetHeight()
+int AVL::GetHeight()
 {
-	std::cout << ComputeHeight(root) << std::endl;
+	return ComputeHeight(root);
+}
+
+int AVL::GetApproxWorkDone()
+{
+	return keyComparisonCount + bfChangeCount;
+}
+
+int AVL::GetNonUnique()
+{
+	return TraverseNonUnique(root);
+}
+
+int AVL::GetUnique()
+{
+	return TraverseUnique(root);
 }
 
 AVL::Node* AVL::Find(const char* cArray)
@@ -359,9 +364,11 @@ AVL::Node* AVL::Find(const char* cArray)
 	Node* current = root;
 	while (current != nullptr) //'Current' will be NULL if 'root == NULL', which is intended!
 	{
-		if (std::strcmp(cArray, current->name) == 0)
+		keyComparisonCount++;
+		if (std::strcmp(cArray, current->data) == 0)
 			return current;
-		if (std::strcmp(cArray, current->name) < 0)
+		keyComparisonCount++;
+		if (std::strcmp(cArray, current->data) < 0)
 			current = current->left;
 		else
 			current = current->right;
@@ -369,21 +376,36 @@ AVL::Node* AVL::Find(const char* cArray)
 	return current;
 }
 
-void AVL::Traverse(AVL::Node* node)
+int AVL::TraverseNonUnique(Node* node)
 {
 	/*
-	 * Traverses the tree (or subtree), calls Traversal on it's children, and prints out to console.
+	 * Traverses the tree (or subtree), calls Traversal on it's children, and returns the count of nodes.
 	 * Parameter<node> The node to start the traversal from (in this subtree)
 	*/
 
-	if (node != nullptr)
-	{
-		if (node->left != nullptr)
-			Traverse(node->left);
-		std::cout << node->name << ' ' << node->count << std::endl;
-		if (node->right != nullptr)
-			Traverse(node->right);
-	}
+	if (node == nullptr)
+		return 0;
+
+	int leftSideUnique = TraverseNonUnique(node->left);
+	int rightSideUnique = TraverseNonUnique(node->right);
+	return leftSideUnique + rightSideUnique + 1;
+}
+
+int AVL::TraverseUnique(Node* node)
+{
+	/*
+	 * Traverses the tree (or subtree), calls Traversal on it's children, and returns the count of nodes that have multiple items.
+	 * Parameter<node> The node to start the traversal from (in this subtree)
+	*/
+
+	if (node == nullptr)
+		return 0;
+	if (node->count < 2)
+		return 0;
+
+	int leftSideUnique = TraverseUnique(node->left);
+	int rightSideUnique = TraverseUnique(node->right);
+	return leftSideUnique + rightSideUnique + 1;
 }
 
 int AVL::ComputeHeight(Node* node)
@@ -408,11 +430,11 @@ int AVL::ComputeHeight(Node* node)
 
 AVL::Node::Node(const char* name, const int count, Node* left, Node* right, int balanceFactor)
 {
-	std::strcpy(this->name, name);
+	std::strcpy(this->data, name);
 	this->count = count;
 	this->left = left;
 	this->right = right;
-	this->balanceFactor = balanceFactor;
+	this->bf = balanceFactor;
 }
 
 bool AVL::Node::IsLeaf()

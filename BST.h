@@ -14,7 +14,10 @@ public:
 	BST();
 	void Insert(const char* cArray);
 	void Search(const char* cArray);
-	void GetHeight();
+	int GetHeight();
+	int GetApproxWorkDone();
+	int GetNonUnique();
+	int GetUnique();
 
 private:
 
@@ -32,8 +35,10 @@ private:
 	};
 
 	Node* root;
-	bool IsEmpty();
+	unsigned int keyComparisonCount;
+	unsigned int nodeLinkChangeCount;
 	Node* Find(const char* cArray);
-	void Traverse(Node* node);
-	int ComputeHeight(Node* node);
+	int TraverseNonUnique(Node* node);
+	int TraverseUnique(Node* node);
+	static int ComputeHeight(Node* node);
 };

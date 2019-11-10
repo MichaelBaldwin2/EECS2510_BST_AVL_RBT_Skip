@@ -12,27 +12,33 @@ class AVL
 {
 public:
 	AVL();
-	void Insert(const char* cArray);
+	void Insert(const char* x);
 	void Search(const char* cArray);
-	void GetHeight();
+	int GetHeight();
+	int GetApproxWorkDone();
+	int GetNonUnique();
+	int GetUnique();
 
 private:
 
 	struct Node
 	{
-		char name[50]{};
+		char data[50]{};
 		int count;
 		Node* left;
 		Node* right;
-		int balanceFactor;
+		int bf;
 		
 		Node(const char* name, const int count, Node* left, Node* right, int balanceFactor);
 		bool IsLeaf();
 	};
 
 	Node* root;
+	unsigned int keyComparisonCount;
+	unsigned int bfChangeCount;
 	Node* Find(const char* cArray);
-	void Traverse(Node* node);
+	int TraverseNonUnique(Node* node);
+	int TraverseUnique(Node* node);
 	int ComputeHeight(Node* node);
 };
 #pragma once

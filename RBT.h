@@ -14,7 +14,10 @@ public:
 	RBT();
 	void Insert(const char* cArray);
 	void Search(const char* cArray);
-	void GetHeight();
+	int GetHeight();
+	int GetApproxWorkDone();
+	int GetNonUnique();
+	int GetUnique();
 
 private:
 	enum Color { RED, BLACK };
@@ -29,16 +32,18 @@ private:
 		Color color = BLACK;
 
 		Node(const char* name, const int count, Node* parent, Node* left, Node* right, Color color);
-		bool IsLeaf();
 	};
 
 	Node* root;
 	Node* nil;
+	unsigned int keyComparisonCount;
+	unsigned int recoloringCount;
 	void Insert(Node* z);
 	void InsertFixup(Node* currentNode);
 	void LeftRotateAround(Node* x);
 	void RightRotateAround(Node* x);
 	Node* Find(const char* cArray);
-	void Traverse(Node* node);
+	int TraverseNonUnique(Node* node);
+	int TraverseUnique(Node* node);
 	int ComputeHeight(Node* node);
 };
